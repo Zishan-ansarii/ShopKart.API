@@ -154,5 +154,45 @@ namespace ShopKart.Tests.Services
             _mockProductRepo.Verify(p => p.AddAsync(It.IsAny<Product>()), Times.Never);
             _mockUnitOfWork.Verify(i => i.SaveAsync(), Times.Never);
         }
+
+        [Fact]
+        public async Task DeleteProduct_WhenProductExists_ReturnsTrue()
+        {
+            //  ARRANGE
+            var product = new Product { Id = 1, Name = "Test Product" };
+            _mockProductRepo.Setup(p => p.GetByIdAsync(product.Id))
+                            .ReturnsAsync(product);
+
+            _mockProductRepo.Setup(p => p.DeleteAsync(product.Id))
+                            .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(u => u.SaveAsync())
+                           .ReturnsAsync(1);
+
+            // ACT
+            var result = await _productService.DeleteProductAsync(product.Id);
+
+            //  ASSERT
+            Assert.True(result);
+            _mockProductRepo.Verify(p => p.DeleteAsync(product.Id), Times.Once);
+            _mockUnitOfWork.Verify(u => u.SaveAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteProduct_WhenProductNotFound_ReturnsFalse()
+        {
+            //  ARRANGE
+            _mockProductRepo.Setup(p => p.GetByIdAsync(999))
+                            .ReturnsAsync((Product)null);
+
+            //  ACT
+            var result = await _productService.DeleteProductAsync(999);
+
+            //  ASSERT
+            Assert.False(result);
+            _mockProductRepo.Verify(p => p.DeleteAsync(999), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveAsync(), Times.Never);
+
+        }
     }
 }
